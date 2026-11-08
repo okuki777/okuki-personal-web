@@ -28,3 +28,4 @@ shots
 .wrangler/
 .dev.vars
 cloudfunction.zip
+.vercel

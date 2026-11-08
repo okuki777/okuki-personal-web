@@ -7,7 +7,3 @@ shots
 *.log
 .wrangler
 cloudfunction.zip
-cloudbase
-shared
-worker
-functions
