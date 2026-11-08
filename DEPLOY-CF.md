@@ -1,103 +1,111 @@
-# Cloudflare Pages 部署（Git 自动部署）
+# Cloudflare Workers 部署（Git 自动部署）
 
-推送到 GitHub → Cloudflare 自动构建 → 全站（含 `/api/*`）上线，改完 `git push` 就自动更新。
+推送到 GitHub → Cloudflare 自动构建 → 全站（含 `/api/*`）上线，以后 `git push` 就自动更新。
 
----
-
-## 一、在 Cloudflare 里连仓库（一次就好）
-
-1. 打开 https://dash.cloudflare.com/?to=/:account/workers-and-pages
-2. **Create** → **Pages** → **Connect to Git**
-3. 授权 GitHub，选仓库 **`okuki777/okuki-personal-web`**
-4. 构建设置按下表填：
-
-| 设置项 | 填什么 |
-|---|---|
-| Framework preset | **None**（或 Vite，两者都行） |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | 留空 |
-| Node version（环境变量） | `NODE_VERSION = 20`（仓库里已有 `.nvmrc`，二选一） |
-
-5. **Save and Deploy**
-
-首次构建约 1–2 分钟，完成后给你 `https://<项目名>.pages.dev`。
-
-> 以后每次 `git push` 到 `main` 都会自动构建上线；PR 会生成预览环境。
+> 你在控制台看到的那一屏 **"Set up your application / Configure your Worker project"** 就是这条路。
+> （Cloudflare 现在把 Git 集成放在 Workers 里，Pages 是另一条更老的路，本项目已兼容两者。）
 
 ---
 
-## 二、为什么 API 也能跑
+## 一、控制台那三个命令，照这个填
 
-Cloudflare Pages 会自动读取仓库根目录的 **`functions/`**：
+| 字段 | 值 | 说明 |
+|---|---|---|
+| **Project name** | `okuki-personal-web` | 必须和 `wrangler.jsonc` 里的 `name` 一致，否则会部署成另一个 Worker |
+| **Build command** | `npm run build` | 产出 `dist/` |
+| **Deploy command** | `npx wrangler deploy` | 读 `wrangler.jsonc`，部署 Worker + 静态资源 |
+| **Preview command** | `npx wrangler versions upload` | ⚠️ `npx wrangler preview` 是旧命令，已废弃，会报错 |
+| **Enable Preview builds** | 可以关掉 | 个人站不需要 PR 预览，关掉省构建次数 |
+
+环境变量（可选）：`NODE_VERSION = 20`（仓库里已有 `.nvmrc`，双保险）
+
+点 **Deploy**，1–2 分钟出 `https://okuki-personal-web.<你的子域>.workers.dev`。
+
+---
+
+## 二、它是怎么跑起来的
 
 ```
-functions/
-└── api/
-    └── [[path]].js     → 处理 /api/meting、/api/songurl、/api/lyric、/api/search
+wrangler.jsonc
+├── main: worker/index.js          Worker 入口
+└── assets.directory: ./dist       静态文件（Vite 构建产物）
+    └── not_found_handling: single-page-application
+
+worker/index.js
+├── /api/*   → functions/api/[[path]].js   （WebCrypto 版网易云接口）
+└── 其它      → env.ASSETS.fetch()          （静态文件 / SPA 回退）
 ```
 
-内部复用 `shared/netease.js` —— 用 **WebCrypto(AES-CBC) + BigInt 模幂(RSA 无填充)** 实现网易云签名，
-不依赖 `node:crypto`，所以在 Workers 运行时里原生可跑。
+关键点：**静态文件不经过 Worker**，Cloudflare 直接从边缘节点发；只有 `/api/*` 才唤起 Worker。
 
-> 同一份签名逻辑，Node（Vercel / 自托管）与 Cloudflare 共用，前端不需要知道跑在哪。
+网易云签名在 `shared/netease.js`，用 **WebCrypto(AES-128-CBC) + BigInt 模幂(RSA 无填充)** 实现，
+不依赖 `node:crypto`，所以在 Workers 运行时里原生可跑（Vercel 那边也是同一份代码）。
 
-本机实测（Node 里模拟 Pages 的 Request/Response）：
+---
+
+## 三、本机用真实 Workers 运行时验证过
+
+不只是单元测试——用 `npx wrangler dev` 起了 workerd，实测：
 
 ```
-/api/meting   200 · 40 首 · 276ms
-/api/songurl  200 · https=true
-/api/lyric    200 · text/plain · 945 字节
-/api/search   200 · 3 条
-/api/nope     404
+GET /                                         200  text/html（静态 index.html）
+GET /api/meting?...&id=18575726923            200  40 首
+GET /api/songurl?id=3316182102                200  https=true
+GET /api/lyric?id=3316182102                  200  text/plain · 1401 字节
+GET /api/search?kw=周杰伦&limit=3              200  3 条
+GET /api/nope                                 404
+GET /some/deep/path                           200  text/html（SPA 回退）
+GET /img/avatar.jpg                           200  image/jpeg
 ```
 
 ---
 
-## 三、构建相关的两个文件
+## 四、缓存
 
 | 文件 | 作用 |
 |---|---|
-| `public/_headers` | 静态资源缓存策略（`/assets/*` 一年 immutable、`index.html` 不缓存） |
-| `public/_redirects` | SPA 回退（找不到的路径回 `index.html`） |
+| `public/_headers` | `/assets/*` 一年 immutable、`index.html` 不缓存 |
+| `public/_redirects` | SPA 回退（`assets.not_found_handling` 已覆盖，双保险） |
 
-两者会被 Vite 复制进 `dist/`，Cloudflare Pages 自动识别。
-
----
-
-## 四、自定义域名
-
-Pages 项目 → **Custom domains** → 添加域名 → 按提示加 CNAME。
-Cloudflare 会自动签 HTTPS（免费），不需要额外配置。
-
-> 注意：**域名托管在 Cloudflare 才能用它的 CDN 加速**；域名在国内注册商（阿里云/腾讯云）也能接入，
-> 只是国内解析速度取决于线路。想要国内真正稳定，还是得走 [`DEPLOY-CN.md`](DEPLOY-CN.md) 那套备案方案。
+被 Vite 复制进 `dist/`，Workers 静态资源会读取。
 
 ---
 
-## 五、和 Vercel 版的关系
+## 五、自定义域名
 
-两套并存，互不影响：
+Workers 项目 → **Settings → Domains & Routes → Add → Custom domain**。
+域名托管在 Cloudflare 时自动签 HTTPS；不在 Cloudflare 就加一条 CNAME。
 
-| 平台 | 静态 | API | 触发文件 |
+> 国内访问：`*.workers.dev` 和 `*.pages.dev` 一样不稳，别指望它替代国内服务器。
+> 要国内快，走 [`server/DEPLOY-CN.md`](server/DEPLOY-CN.md) 那套（备案 + 轻量服务器，服务端已写好）。
+
+---
+
+## 六、和 Vercel / Pages 的关系
+
+| 平台 | 静态 | API | 入口 |
 |---|---|---|---|
+| Cloudflare Workers | `dist/` | `functions/`（经 `worker/index.js` 转发） | `wrangler.jsonc` |
+| Cloudflare Pages（可选） | `dist/` | `functions/` 直接被识别 | `pages_build_output_dir` |
 | Vercel | `dist/` | `api/*.js`（Node 运行时） | `vercel.json` |
-| Cloudflare Pages | `dist/` | `functions/api/[[path]].js`（Workers 运行时） | `wrangler.jsonc` |
 
-同一次 `git push`，两边都能构建成功。
+三个平台的业务逻辑共用 `shared/netease.js`，改一处三处生效。
 
 ---
 
-## 六、常见问题
+## 七、常见问题
 
-**Q：构建报 `Cannot find module 'node:crypto'`？**
-不应该出现——`shared/netease.js` 只用了 WebCrypto。如果出现，检查是不是还有文件 import 了 `node:crypto`。
+**Q：构建报 `Could not resolve "node:crypto"`？**
+不该出现，本项目已全部改用 WebCrypto。若出现，检查是否新增了 Node 专用 import。
 
-**Q：`/api/meting` 返回 500？**
-看 Pages → 项目 → **Functions** 日志。多半是网易云临时风控，重试即可；前端会自动退回公共 Meting 服务。
+**Q：部署成功但 `/api/meting` 500？**
+看 Worker 日志（`wrangler tail` 或面板 Observability）。多为网易云临时风控，前端会自动退回公共 Meting 服务。
 
-**Q：音乐能播但没声音？**
-浏览器要求用户先点一下播放，这是策略限制，不是接口问题。
+**Q：Project name 和 wrangler.jsonc 不一致会怎样？**
+`wrangler deploy` 以配置文件里的 `name` 为准，可能部署到另一个 Worker，导致面板上看到的是旧版本。保持两者一致。
 
-**Q：构建很慢 / 失败？**
-Node 版本设成 20（环境变量 `NODE_VERSION`）。
+**Q：本地怎么跑？**
+```bash
+npm run build
+npx wrangler dev          # http://localhost:8787
+```

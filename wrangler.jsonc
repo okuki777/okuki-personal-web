@@ -1,7 +1,18 @@
 {
-  // Cloudflare Pages 项目配置
-  // Git 自动部署时这些值以控制台设置为准；本地 `wrangler pages deploy` 会读这里
-  "name": "okuki-home",
+  // Cloudflare Workers + 静态资源（Cloudflare 控制台里 "Import a repository" 走的就是 `wrangler deploy`）
+  "name": "okuki-personal-web",
+  "main": "worker/index.js",
   "compatibility_date": "2025-10-10",
-  "pages_build_output_dir": "./dist"
+
+  // dist/ 作为静态资源；找不到的路径回 index.html（单页应用）
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
+  },
+
+  // 构建产物观察（Worker 只在小体积时启动快，静态文件不进 Worker）
+  "observability": {
+    "enabled": true
+  }
 }
