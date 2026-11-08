@@ -127,9 +127,45 @@ export async function fetchUrls(ids, brs = [320000, 192000, 128000]) {
   return map
 }
 
+/**
+ * 带兜底的取地址：
+ * 有些环境（比如 Cloudflare 境外边缘）调 weapi 拿不到 url——网易云按 IP 地域/版权限制回空。
+ * 依次尝试：
+ *   1. weapi player/url（320k→192k→128k）
+ *   2. 官方 outer url（服务端解析 302，绕开地域限制的常见路径）
+ *   3. 公共 Meting 服务
+ */
+export async function resolvePlayableUrl(id) {
+  const map = await fetchUrls([Number(id)])
+  if (map[id]) return map[id]
+
+  // 兜底 2：网易云 outer url
+  try {
+    const r = await fetch(`https://music.163.com/song/media/outer/url?id=${id}.mp3`, {
+      redirect: 'manual',
+      headers: { 'User-Agent': UA, 'Referer': BASE + '/' }
+    })
+    const loc = r.headers.get('location') || ''
+    if (/^https?:\/\//i.test(loc) && !/\/404/.test(loc)) return httpsfy(loc)
+  } catch (e) {
+    console.warn('[netease] outer url failed:', e.message)
+  }
+
+  // 兜底 3：公共 Meting
+  try {
+    const r = await fetch(`https://api.i-meto.com/meting/api?server=netease&type=song&id=${id}`)
+    const arr = await r.json()
+    const u = Array.isArray(arr) && arr[0] && arr[0].url
+    if (u) return httpsfy(u)
+  } catch (e) {
+    console.warn('[netease] meting fallback failed:', e.message)
+  }
+
+  return ''
+}
+
 /** 统一成前端要的结构 */
-export function toItem(t) {
-  const pic = t.al && t.al.picUrl ? httpsfy(t.al.picUrl) + '?param=300y300' : ''
+export function toItem(t) {  const pic = t.al && t.al.picUrl ? httpsfy(t.al.picUrl) + '?param=300y300' : ''
   const ar = t.ar || t.artists || []
   return {
     id: t.id,

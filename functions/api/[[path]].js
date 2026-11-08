@@ -14,7 +14,7 @@
 import {
   getPlaylist,
   getSong,
-  fetchUrls,
+  resolvePlayableUrl,
   getLyric,
   searchSongs
 } from '../../shared/netease.js'
@@ -74,8 +74,8 @@ export async function onRequest(context) {
     if (path === '/api/songurl') {
       const id = q.get('id')
       if (!id || !/^\d+$/.test(id)) return json({ url: '', error: 'invalid id' }, { status: 400 })
-      const map = await fetchUrls([Number(id)])
-      return json({ url: map[Number(id)] || '' }, { headers: { 'Cache-Control': 'no-store' } })
+      const url = await resolvePlayableUrl(id)
+      return json({ url }, { headers: { 'Cache-Control': 'no-store' } })
     }
 
     if (path === '/api/lyric') {

@@ -4,6 +4,9 @@
   "main": "worker/index.js",
   "compatibility_date": "2025-10-10",
 
+  // 注：曾有 "placement": { "mode": "smart" }（就近执行），但它是 Workers 付费计划才有的能力，
+  // 免费计划加上去会导致部署失败，所以保留注释、不启用。等升级计划再打开。
+
   // dist/ 作为静态资源；找不到的路径回 index.html（单页应用）
   "assets": {
     "directory": "./dist",
