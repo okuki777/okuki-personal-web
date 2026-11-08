@@ -1,7 +1,7 @@
 {
-  "name": "homepage",
+  // Cloudflare Pages 项目配置
+  // Git 自动部署时这些值以控制台设置为准；本地 `wrangler pages deploy` 会读这里
+  "name": "okuki-home",
   "compatibility_date": "2025-10-10",
-  "assets": {
-    "directory": "./dist"
-  }
+  "pages_build_output_dir": "./dist"
 }

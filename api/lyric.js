@@ -1,4 +1,4 @@
-import { weapi } from './_netease.js'
+import { getLyric } from '../shared/netease.js'
 
 /**
  * GET /api/lyric?id=xxx
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const d = await weapi('/weapi/song/lyric', { id: Number(id), lv: -1, kv: -1, tv: -1 })
-    const lrc = (d.lrc && d.lrc.lyric) || ''
+    const lrc = await getLyric(Number(id))
     cache.set(id, { t: Date.now(), v: lrc })
+    res.statusCode = 200
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400')
     return res.end(lrc)
   } catch (e) {

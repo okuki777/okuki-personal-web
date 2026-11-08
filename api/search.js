@@ -1,10 +1,8 @@
-import { weapi, httpsfy } from './_netease.js'
+import { searchSongs } from '../shared/netease.js'
 
 /**
  * GET /api/search?kw=周杰伦&limit=10
- * 返回 [{ id, title, author, pic, album }]
- *
- * 给"在页面上搜歌 / 点歌"这类功能用；目前没有前端界面，但接口先备好。
+ * 返回 [{ id, title, author, album, duration, pic }]
  */
 
 const CACHE_TTL = 10 * 60 * 1000
@@ -31,20 +29,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const d = await weapi('/weapi/search/get', { s: kw, type: 1, limit, offset: 0 })
-    const songs = (d.result && d.result.songs) || []
-    const list = songs.map(s => {
-      const pic = s.album && s.album.picUrl ? httpsfy(s.album.picUrl) + '?param=120y120' : ''
-      return {
-        id: s.id,
-        title: s.name || '',
-        author: (s.artists || []).map(a => a.name).join(' / '),
-        album: s.album ? s.album.name : '',
-        duration: s.duration || 0,
-        pic
-      }
-    })
+    const list = await searchSongs(kw, limit)
     cache.set(key, { t: Date.now(), v: list })
+    res.statusCode = 200
     res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300')
     res.end(JSON.stringify(list))
   } catch (e) {

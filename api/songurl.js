@@ -1,4 +1,4 @@
-import { fetchUrls } from './_netease.js'
+import { fetchUrls } from '../shared/netease.js'
 
 /**
  * GET /api/songurl?id=3316182102
@@ -23,9 +23,8 @@ export default async function handler(req, res) {
 
   try {
     const map = await fetchUrls([Number(id)])
-    const url = map[Number(id)] || ''
     res.statusCode = 200
-    res.end(JSON.stringify({ url }))
+    res.end(JSON.stringify({ url: map[Number(id)] || '' }))
   } catch (e) {
     console.error('[songurl] failed:', e)
     res.statusCode = 502

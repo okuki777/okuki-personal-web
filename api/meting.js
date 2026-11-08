@@ -1,4 +1,4 @@
-import { weapi, toItem } from './_netease.js'
+import { getPlaylist, getSong } from '../shared/netease.js'
 
 /**
  * GET /api/meting?server=netease&type=playlist&id=18575726923
@@ -12,28 +12,6 @@ import { weapi, toItem } from './_netease.js'
 
 const CACHE_TTL = 10 * 60 * 1000
 const cache = new Map()
-
-async function getPlaylist(id) {
-  const d = await weapi('/weapi/v6/playlist/detail', { id: Number(id), n: 1000, s: 8 })
-  let tracks = (d.playlist && d.playlist.tracks) || []
-
-  // 曲目多时 v6 只给一部分，用 trackIds 补齐
-  const trackIds = (d.playlist && d.playlist.trackIds) || []
-  if (tracks.length < trackIds.length) {
-    const ids = trackIds.map(t => t.id).slice(0, 1000)
-    const detail = await weapi('/weapi/v3/song/detail', {
-      c: JSON.stringify(ids.map(i => ({ id: i })))
-    })
-    if (detail.songs) tracks = detail.songs
-  }
-
-  return tracks.map(t => toItem(t))
-}
-
-async function getSong(id) {
-  const d = await weapi('/weapi/v3/song/detail', { c: JSON.stringify([{ id: Number(id) }]) })
-  return (d.songs || []).map(t => toItem(t))
-}
 
 export default async function handler(req, res) {
   const { searchParams } = new URL(req.url, 'https://x')
