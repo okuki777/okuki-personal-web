@@ -60,12 +60,15 @@ GET /img/avatar.jpg                           200  image/jpeg
 
 ---
 
-## 四、缓存
+## 四、缓存与回退
 
 | 文件 | 作用 |
 |---|---|
 | `public/_headers` | `/assets/*` 一年 immutable、`index.html` 不缓存 |
-| `public/_redirects` | SPA 回退（`assets.not_found_handling` 已覆盖，双保险） |
+| `wrangler.jsonc` → `assets.not_found_handling` | SPA 回退（`single-page-application`） |
+
+⚠️ **不要再加 `public/_redirects`**：Workers 静态资源的 `_redirects` 不支持 `/* /index.html 200` 这种通配重写，
+上传阶段会校验失败（表现为 Deploying 阶段红叉）。SPA 回退交给 `not_found_handling` 就够了，本机实测有效。
 
 被 Vite 复制进 `dist/`，Workers 静态资源会读取。
 
