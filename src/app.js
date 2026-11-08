@@ -422,7 +422,11 @@ export default {
       const id = song.id || (song.lrc ? (song.lrc.match(/id=(\d+)/) || [])[1] : null);
       if (!id) return song.url || '';
       try {
-        const r = await fetch(`/api/songurl?id=${id}`, { cache: 'no-store' });
+        // 8 秒拿不到就放弃：宁可跳过这一首，也不要让播放器干等十几秒
+        const r = await fetch(`/api/songurl?id=${id}`, {
+          cache: 'no-store',
+          signal: AbortSignal.timeout(8000)
+        });
         if (r.ok) {
           const d = await r.json();
           if (d && d.url) { song.url = d.url; return d.url; }

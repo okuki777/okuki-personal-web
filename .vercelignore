@@ -6,3 +6,8 @@ shots
 .vscode
 *.log
 .wrangler
+cloudfunction.zip
+cloudbase
+shared
+worker
+functions

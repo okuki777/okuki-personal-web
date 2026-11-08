@@ -1,0 +1,6 @@
+{
+  "name": "okuki-api",
+  "private": true,
+  "type": "module",
+  "main": "cloudbase/index.js"
+}

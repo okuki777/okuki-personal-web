@@ -27,3 +27,4 @@ shots
 *.sw?
 .wrangler/
 .dev.vars
+cloudfunction.zip
