@@ -17,7 +17,11 @@
 | **Preview command** | `npx wrangler versions upload` | ⚠️ `npx wrangler preview` 是旧命令，已废弃，会报错 |
 | **Enable Preview builds** | 可以关掉 | 个人站不需要 PR 预览，关掉省构建次数 |
 
-环境变量（可选）：`NODE_VERSION = 20`（仓库里已有 `.nvmrc`，双保险）
+环境变量（**建议显式设置**）：`NODE_VERSION = 22`
+
+> ⚠️ 必须 ≥ 22：`wrangler@4` 要求 Node 22。仓库里 `.nvmrc` 已是 `22`，
+> 但**控制台里的环境变量优先级更高**——如果之前设过 `NODE_VERSION=20`，务必改成 `22`，
+> 否则构建会在 Deploy command 报 `Wrangler requires at least Node.js v22.0.0`。
 
 点 **Deploy**，1–2 分钟出 `https://okuki-personal-web.<你的子域>.workers.dev`。
 
