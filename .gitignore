@@ -25,3 +25,5 @@ shots
 *.njsproj
 *.sln
 *.sw?
+.wrangler/
+.dev.vars
