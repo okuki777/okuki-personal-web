@@ -319,7 +319,25 @@ export default {
       this.videoposter = poster || '';
       clearTimeout(this._videoTimer);
       const start = () => {
-        this._videoTimer = setTimeout(() => { this.videosrc = url; }, 600);
+        this._videoTimer = setTimeout(() => {
+          this.videosrc = url;
+          // 关键：换 src 后必须显式 load()，否则浏览器不会重新取流，画面会一直停在 poster
+          this.$nextTick(() => {
+            const v = this.$refs.VdPlayer;
+            if (!v) return;
+            try { v.load(); } catch (e) { }
+            const p = v.play();
+            if (p && p.catch) p.catch(() => { });
+            // ?debugbg=1 时在控制台打一行状态，方便排查
+            if (location.search.includes('debugbg')) {
+              setTimeout(() => {
+                console.log('[bg] ready=' + v.readyState + ' paused=' + v.paused +
+                  ' t=' + v.currentTime.toFixed(2) + ' err=' + (v.error && v.error.code) +
+                  ' net=' + v.networkState);
+              }, 3000);
+            }
+          });
+        }, 600);
       };
       if (document.readyState === 'complete') {
         start();
