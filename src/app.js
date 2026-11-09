@@ -29,6 +29,7 @@ export default {
       dialog2: false,
       personalizedtags: null,
       videosrc: '',
+      videoposter: '',
       ismusicplayer: false,
       isPlaying:false,
       playlistIndex: 0,
@@ -134,18 +135,19 @@ export default {
           Promise.race([Promise.all(imagePromises), timeoutPromise]).then(()=>{
             if(imageurl){
               const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
               img.src = imageurl;
-              // resolve() 函数通将一个 Promise 对象从未完成状态转变为已完成状态
-              img.onload = () => {resolve();};
-              img.onerror = (err) => {reject(err);};
+              if (img.complete) resolve();     // 缓存命中时 load 可能已错过
+            }else if(this.bgPoster){
+              // 动态壁纸改成了延迟加载：等 poster 静帧就够，不等几 MB 的视频
+              const posterImg = new Image();
+              posterImg.onload = () => resolve();
+              posterImg.onerror = () => resolve();
+              posterImg.src = this.bgPoster;
+              if (posterImg.complete) resolve();
             }else{
-              const video = this.$refs.VdPlayer;
-              video.onloadedmetadata = () => {
-                setTimeout(() => {
-                }, "200");  
-                resolve();
-              };
-              video.onerror = (err) => {resolve();};
+              resolve();                        // 兜底：绝不能让 loader 卡住
             }
           })
         });
@@ -205,6 +207,22 @@ export default {
   },
 
   computed: {
+    /**
+     * 动态壁纸的静帧（poster）：
+     * 直接从配置取，不依赖 setMainProperty 的执行路径，
+     * 保证首屏一定先有画面，再等视频慢慢加载。
+     */
+    bgPoster() {
+      if (this.videoposter) return this.videoposter;
+      try {
+        const bg = this.configdata.background;
+        const info = (this.xs || this.sm) ? bg.mobile.datainfo : bg.pc.datainfo;
+        return info && info.poster ? info.poster : '';
+      } catch (e) {
+        return '';
+      }
+    },
+
     currentSong() {
 		  return this.musicinfo?.[this.playlistIndex];
     },
@@ -292,6 +310,26 @@ export default {
       this.snackbar = true;
     },
 
+    /**
+     * 动态壁纸延迟加载：
+     *   先把 poster（几百 KB 的静帧）画上去，让页面立刻有画面；
+     *   等首屏资源都跑完、浏览器空闲了，再真正请求那个几 MB 的视频。
+     */
+    queueVideoBackground(url, poster){
+      this.videoposter = poster || '';
+      clearTimeout(this._videoTimer);
+      const start = () => {
+        this._videoTimer = setTimeout(() => { this.videosrc = url; }, 600);
+      };
+      if (document.readyState === 'complete') {
+        start();
+      } else {
+        window.addEventListener('load', start, { once: true });
+        // 兜底：load 迟迟不来（有大资源卡住）也不要无限等
+        setTimeout(() => { if (!this.videosrc) start(); }, 2500);
+      }
+    },
+
     setMainProperty(imageurl){
       const root = document.documentElement;
       let leleodata = this.getCookie("leleodata");
@@ -308,7 +346,8 @@ export default {
       }
   
       let leleodatabackground = this.getCookie("leleodatabackground");
-      const { xs } = useDisplay();
+      // 不能在这里调 useDisplay()：Vuetify 3 要求 composable 只能在 setup 内调用，否则会抛错并中断 mounted
+      const xs = { value: this.xs || this.sm };
       if(leleodatabackground){
         if(xs.value){
           if(leleodatabackground.mobile.type == "pic"){
@@ -316,7 +355,7 @@ export default {
             imageurl = leleodatabackground.mobile.datainfo.url;
             return imageurl;
           }else{
-            this.videosrc = leleodatabackground.mobile.datainfo.url;
+            this.queueVideoBackground(leleodatabackground.mobile.datainfo.url, leleodatabackground.mobile.datainfo.poster);
           }
         }else{
           if(leleodatabackground.pc.type == "pic"){
@@ -324,7 +363,7 @@ export default {
             imageurl = leleodatabackground.pc.datainfo.url;
             return imageurl;
           }else{
-            this.videosrc = leleodatabackground.pc.datainfo.url;
+            this.queueVideoBackground(leleodatabackground.pc.datainfo.url, leleodatabackground.pc.datainfo.poster);
           }
         }
           
@@ -335,7 +374,7 @@ export default {
             imageurl = this.configdata.background.mobile.datainfo.url;
             return imageurl;
           }else{
-            this.videosrc = this.configdata.background.mobile.datainfo.url;
+            this.queueVideoBackground(this.configdata.background.mobile.datainfo.url, this.configdata.background.mobile.datainfo.poster);
           }
         }else{
           if(this.configdata.background.pc.type == "pic"){
@@ -343,7 +382,7 @@ export default {
             imageurl = this.configdata.background.pc.datainfo.url;
             return imageurl;
           }else{
-            this.videosrc = this.configdata.background.pc.datainfo.url;
+            this.queueVideoBackground(this.configdata.background.pc.datainfo.url, this.configdata.background.pc.datainfo.poster);
           }
           
         }

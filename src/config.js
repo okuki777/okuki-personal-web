@@ -31,6 +31,7 @@ const config = {
 			"type": "video",   //"pic":静态壁纸;"video":动态壁纸
 			"datainfo": {
 				"title": "阿尔托莉雅-潘德拉贡",
+				"poster": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅-poster.jpg",
 				"preview": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅-pre.mp4",
 				"url": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅.mp4"
 			}
@@ -87,6 +88,7 @@ const config = {
 		video: [
 			{
 				"title": "阿尔托莉雅-潘德拉贡",
+				"poster": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅-poster.jpg",
 				"preview": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅-pre.mp4",
 				"url": "/img/wallpaper/dynamic/阿尔托莉雅/阿尔托莉雅.mp4"
 			},
