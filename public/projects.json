@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "go": "🔗 前往",
+    "img": "/img/projects/nailong-laugh.jpg",
+    "title": "奶龙大笑",
+    "subtitle": "Ctrl + 右键，奶龙在鼠标旁边笑一场",
+    "text": "桌面常驻小工具：按住 Ctrl 点右键，鼠标旁边冒出一小块奶龙，配原声放完自动消失。白边已逐像素抠掉，只占屏幕一小块、可点穿、不抢焦点。三种开关：托盘图标、右下角小胶囊、Ctrl + Alt + S。",
+    "url": "https://github.com/okuki777/nailong-laugh"
+  },
+  {
+    "go": "🔗 前往",
+    "img": "/img/projects/top-10.jpg",
+    "title": "星标 top 10",
+    "subtitle": "抓 GitHub 星标前 10，生成 Markdown 周报",
+    "text": "一个 DeepSeek Harness 插件：注册 fetch_github_top10 工具，调用 GitHub 公共 Search API 取星标最高的十个仓库，格式化成周报表格。纯 Host Plugin，无需认证，未认证限流 10 次/分钟，一周跑一次完全够用。",
+    "url": "https://github.com/okuki777/top-10"
+  },
+  {
+    "go": "🔗 前往",
+    "img": "/img/projects/emoji-fusion.jpg",
+    "title": "emoji 融合工坊",
+    "subtitle": "选人物 + 配饰，融合成一个新 emoji",
+    "text": "选一位人物或动物，再给它戴上皇冠、架上眼镜、递上食物——位置和大小按配件类型自动决定。融合全部在浏览器本地完成，不上传任何内容，可复制链接、复制图片、下载 PNG。美术素材来自 Twemoji 15.0。会慢慢优化的。",
+    "url": "https://emoji-fusion.pages.dev/"
+  }
+]

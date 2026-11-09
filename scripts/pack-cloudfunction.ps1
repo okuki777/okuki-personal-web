@@ -1,4 +1,4 @@
-# 打包境内云函数（零依赖，约 30 KB）
+﻿# 打包境内云函数（零依赖，约 30 KB）
 # 用法：powershell -ExecutionPolicy Bypass -File scripts\pack-cloudfunction.ps1
 
 $ErrorActionPreference = 'Stop'
