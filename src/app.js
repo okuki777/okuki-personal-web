@@ -78,7 +78,21 @@ export default {
       this.configdata = JSON.parse(import.meta.env.VITE_CONFIG);
     }
     this.projectcards = [...(this.configdata.projectcards || [])];this.socialPlatformIcons = this.configdata.socialPlatformIcons;
-    // 合并「现场新增」的项目（localStorage）
+
+    // 合并「仓库里公开」的项目（public/projects.json，所有人都能看到）
+    try{
+      const r = await fetch('/projects.json', { cache: 'no-store' });
+      if(r.ok){
+        const shared = await r.json();
+        if(Array.isArray(shared) && shared.length){
+          const exists = new Set(this.projectcards.map(x => (x.title || '') + '|' + (x.url || '')));
+          const extra = shared.filter(x => !exists.has((x.title || '') + '|' + (x.url || '')));
+          this.projectcards = [...this.projectcards, ...extra];
+        }
+      }
+    }catch(e){ console.warn('公开项目读取失败', e); }
+
+    // 合并「现场新增」的项目（localStorage，只有自己看得到）
     try{
       const saved = JSON.parse(localStorage.getItem('okuki.projects') || '[]');
       if(Array.isArray(saved) && saved.length){
@@ -241,6 +255,28 @@ export default {
 
     onPickError(msg){
       this.snackbarText = msg || '图片读取失败';
+      this.snackbar = true;
+    },
+
+    /** 导出成 public/projects.json 的内容（去掉内部字段），复制到剪贴板 */
+    async exportProjects(){
+      const list = (this.projectcards || []).map(p => ({
+        go: p.go || '🔗 前往',
+        img: p.img || '',
+        title: p.title || '',
+        subtitle: p.subtitle || '',
+        text: p.text || '',
+        url: p.url || ''
+      }));
+      const json = JSON.stringify(list, null, 2);
+      try{
+        await navigator.clipboard.writeText(json);
+        this.snackbarText = `已复制 ${list.length} 个项目 → 粘贴到 public/projects.json 后推送`;
+      }catch(e){
+        console.warn('复制失败', e);
+        this.snackbarText = '复制失败，请在控制台查看导出内容';
+        console.log(json);
+      }
       this.snackbar = true;
     },
 

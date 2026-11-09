@@ -115,7 +115,7 @@
                 <homeright :configdata=configdata :formattedTime=formattedTime 
                 :formattedDate=formattedDate :projectcards=projectcards
                 @add-project="addProject" @remove-project="removeProject"
-                @pick-error="onPickError"></homeright>
+                @pick-error="onPickError" @export-projects="exportProjects"></homeright>
             </v-col>
         </v-row>
     </div>

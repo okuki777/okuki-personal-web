@@ -67,6 +67,14 @@
           <v-chip class="mt-3 ml-3" prepend-icon="mdi-webhook"  size="large" style="color: var(--leleo-vcard-color);">
             我的项目
           </v-chip>
+          <v-btn
+            class="mt-3 ml-2"
+            size="small"
+            variant="text"
+            prepend-icon="mdi-code-json"
+            style="color: var(--leleo-vcard-color);"
+            @click="$emit('export-projects')"
+          >导出 JSON</v-btn>
           <v-container>
             <v-row>
               <v-col
@@ -166,7 +174,7 @@
                 <div v-else style="font-size:.72rem; opacity:.6; margin-top:6px;">留空就用默认的仙人掌图</div>
               </v-card-text>
               <v-card-actions>
-                <span style="font-size: .72rem; opacity: .6; margin-left: 8px;">只存在这台设备的浏览器里</span>
+                <span style="font-size: .72rem; opacity: .6; margin-left: 8px;">先存到本机；要公开点「导出 JSON」</span>
                 <v-spacer></v-spacer>
                 <v-btn variant="text" @click="addDialog = false">取消</v-btn>
                 <v-btn color="primary" variant="flat" :disabled="!form.title.trim()" @click="submitAdd">添加</v-btn>
@@ -188,7 +196,7 @@ export default {
         typewriter,turntable
     },
     props: ['configdata','formattedTime','formattedDate','projectcards'],
-	emits: ['add-project', 'remove-project', 'pick-error'],
+	emits: ['add-project', 'remove-project', 'pick-error', 'export-projects'],
 	data() {
 		return {
 			searchQuery: '',
