@@ -311,41 +311,33 @@ export default {
     },
 
     /**
-     * 动态壁纸延迟加载：
-     *   先把 poster（几百 KB 的静帧）画上去，让页面立刻有画面；
-     *   等首屏资源都跑完、浏览器空闲了，再真正请求那个几 MB 的视频。
+     * 动态壁纸：
+     *   poster（静帧）立刻画上去，保证首屏有画面、loader 不必等视频；
+     *   视频源同时开始加载——保持"一进页面就播"的老行为，避免延迟换源播不动。
      */
     queueVideoBackground(url, poster){
       this.videoposter = poster || '';
       clearTimeout(this._videoTimer);
-      const start = () => {
-        this._videoTimer = setTimeout(() => {
-          this.videosrc = url;
-          // 关键：换 src 后必须显式 load()，否则浏览器不会重新取流，画面会一直停在 poster
-          this.$nextTick(() => {
-            const v = this.$refs.VdPlayer;
-            if (!v) return;
-            try { v.load(); } catch (e) { }
-            const p = v.play();
-            if (p && p.catch) p.catch(() => { });
-            // ?debugbg=1 时在控制台打一行状态，方便排查
-            if (location.search.includes('debugbg')) {
-              setTimeout(() => {
-                console.log('[bg] ready=' + v.readyState + ' paused=' + v.paused +
-                  ' t=' + v.currentTime.toFixed(2) + ' err=' + (v.error && v.error.code) +
-                  ' net=' + v.networkState);
-              }, 3000);
-            }
-          });
-        }, 600);
-      };
-      if (document.readyState === 'complete') {
-        start();
-      } else {
-        window.addEventListener('load', start, { once: true });
-        // 兜底：load 迟迟不来（有大资源卡住）也不要无限等
-        setTimeout(() => { if (!this.videosrc) start(); }, 2500);
-      }
+      this.videosrc = url;
+      this.$nextTick(() => {
+        const v = this.$refs.VdPlayer;
+        if (!v) return;
+        const kick = () => {
+          const p = v.play();
+          if (p && p.catch) p.catch(() => { });
+        };
+        kick();
+        // 数据到手后再补一次播放（部分浏览器首次 play 会排队失败）
+        v.addEventListener('loadeddata', kick, { once: true });
+        v.addEventListener('canplay', kick, { once: true });
+        if (location.search.includes('debugbg')) {
+          setTimeout(() => {
+            console.log('[bg] ready=' + v.readyState + ' paused=' + v.paused +
+              ' t=' + v.currentTime.toFixed(2) + ' err=' + (v.error && v.error.code) +
+              ' net=' + v.networkState);
+          }, 4000);
+        }
+      });
     },
 
     setMainProperty(imageurl){
